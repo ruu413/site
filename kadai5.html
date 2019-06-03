@@ -1,0 +1,132 @@
+<DOCTYPE html>
+<html>
+ <head>
+ </head>
+ <body>
+  <table id="a" border=1><!--ライフゲームを表示するところ-->
+  </table>
+  <button id="start" onClick=start()>start</button>
+  <button id="stop" hidden=true onClick=stop()>stop</button>
+  <button id="start" onClick=reset()>reset</button>
+  <p id="sedai">0世代</p>
+ </body>
+ <script type="text/javascript">
+  var width = 50//横のマス数
+  var height = 50//縦のマス数
+  var table = document.getElementById("a")//配置するテーブルを取得
+  for(let i=0;i<height;++i){
+   table.innerHTML+="<tr></tr>"//行を配置
+  }
+  var tr=document.getElementsByTagName("tr")//行要素を取得
+  for(let i=0;i<height;++i){
+   for(let j=0;j<width;++j){//カラムをi行j列にi,jのidを付けて配置
+    tr[i].innerHTML+="<td id='"+ String(i)+","+String(j) +"'>　</td>"
+   }
+  }
+  
+  for(let i=0;i<height;++i){
+   for(let j=0;j<width;++j){
+    let id= String(i)+","+String(j)
+    let td = document.getElementById(id)//i行j列のカラムの要素を取得
+    td.style.backgroundColor="#000000"//黒く塗る
+    td.onclick=()=>{clickcell(i,j)}//クリックしたときのイベントを設置
+   }
+  }
+  var array//ライフゲームの情報を保持
+  var nextarray//次世代の情報
+  var interval//更新用のハンドルを保持
+  var sedai = 0//世代を保持
+
+  initarray()
+
+  function initarray(){
+   array = new Array(height)
+   nextarray = new Array(height)
+   for(let i=0;i<height;++i){
+    array[i] = new Array(width)
+    nextarray[i] = new Array(width)//配列の初期化
+    for(let j=0;j<width;++j){
+     array[i][j] = 0
+     nextarray[i][j] = 0//全て何もない状態に
+    }
+   }
+  }
+  function clickcell(i,j){ //各カラムがクリックされたとき呼ばれる
+   let id= String(i)+","+String(j)
+   if(array[i][j]==0){//切り替えると同時に塗り替える
+    array[i][j]=1
+    document.getElementById(id).style.backgroundColor="#FF0000"//赤くする
+   }else{   
+    array[i][j]=0
+    document.getElementById(id).style.backgroundColor="#000000"//黒くする
+   }
+  }
+  function reset(){//初期状態に戻す
+   sedai = 0
+   stop()
+   initarray()
+   updateview()//htmlに反映
+  }
+  function start(){//スタートボタンが押されたとき
+   interval = setInterval("update()",200)//一定期間で世代更新
+   document.getElementById("start").hidden=true//スタートボタンを隠す 
+   document.getElementById("stop").hidden=false//ストップボタンを表示
+  }
+  function stop(){//ストップボタンが押されたとき
+   clearInterval(interval)//一定期間の世代更新を中止
+   document.getElementById("start").hidden=false//スタートボタンを表示
+   document.getElementById("stop").hidden=true//ストップボタンを隠す
+  }
+  function updateview(){//今のarrayの状態をhtmlに反映
+   document.getElementById("sedai").innerHTML = String(sedai)+"世代"//何世代か表示
+   for(let i=0;i<height;++i){
+    for(let j=0;j<width;++j){
+     let id= String(i)+","+String(j)
+     if(array[i][j]==0){
+      document.getElementById(id).style.backgroundColor="#000000"//i,j成分が0=>黒 1=>赤
+     }else{   
+      document.getElementById(id).style.backgroundColor="#FF0000"
+     }
+    }
+   }
+  }
+  function updatecell(){//arrayの世代を更新
+   sedai++;
+   for(let i=0;i<height;++i){
+    for(let j=0;j<width;++j){
+     let num = 0//周りの生命の数を数える
+     if(i-1>=0&&array[i-1][j]==1)num++
+     if(j-1>=0&&array[i][j-1]==1)num++
+     if(i+1<height&&array[i+1][j]==1)num++
+     if(j+1<width&&array[i][j+1]==1)num++
+     if(i-1>=0&&j-1>=0&&array[i-1][j-1]==1)num++
+     if(i-1>=0&&j+1<width&&array[i-1][j+1]==1)num++
+     if(i+1<height&&j-1>=0&&array[i+1][j-1]==1)num++
+     if(i+1<height&&j+1<width&&array[i+1][j+1]==1)num++
+     if(array[i][j]==0){//何もないとき
+      if(num==3)nextarray[i][j]=1//周りに3つ生命があったら新しい生命を出現
+      else nextarray[i][j]=0
+     }else{
+      if(num<=1||num>=4)nextarray[i][j]=0//1<num<4のときのみ存続
+      else nextarray[i][j]=1
+     }
+    }
+   }
+   copy2Darray(array,nextarray)//新しい世代の内容をコピー
+  }
+  function copy2Darray(a,b){//2次元配列のコピー
+   for(let i=0;i<height;++i){
+    for(let j=0;j<width;++j){
+     a[i][j]=b[i][j]
+    }
+   }
+  }
+  function update(){//世代更新をする
+   updatecell()//arrayの情報更新
+   updateview()//htmlに反映
+   //var r=Math.floor(Math.random()*256*256*256)
+   //document.body.style.backgroundColor="#"+("000000"+Number(r).toString(16)).slice(-6)
+  }
+  //setInterval("update()",500);
+ </script>
+</html>
