@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/onnxjs/dist/onnx.min.js"></script>
+    
+  </head>
+  <body>
+    <p id="description">model loading…</p>
+    <button id="createbutton" onclick="createimg()" disabled>作成</button>
+    <div id="img"></div>
+  </body>
+  <script>
+    let div = document.getElementById("img")
+    let canvases = []
+    let m_size = 3
+    for(let i=0;i<10;++i){
+      let can = document.createElement("canvas")
+      can.setAttribute("id", String(i))
+      can.setAttribute("width", 64*m_size)
+      can.setAttribute("height", 64*m_size)
+      canvases.push(can)
+      div.appendChild(can)
+    }
+    const putText = (str)=>{
+      document.getElementById("description").innerText=str
+    }
+    let model_load_flag=false
+    const session = new InferenceSession({ backendHint: 'webgl' })
+    const loadmodel = async  ()=>{
+
+      // ONNX形式のモデルファイル
+      const modelFile = './sngan_.onnx'
+      // モデルの読み込み
+      await session.loadModel(modelFile)
+      document.getElementById("createbutton").disabled=false
+      model_load_flag=true
+      putText("model loaded")
+    }
+    const createimg = async ()=>{
+      // Inputデータの準備（必要であれば事前に前処理をしておく必要があります）
+      // とりあえず、すべて0とするダミーデータを用意します
+      if(model_load_flag == false){
+        return
+      }
+      rand1000=[]
+      for(let i=0;i<1000;++i){
+        rand1000.push(Math.random())
+      }
+      const input = new Float32Array(rand1000)
+      const input_tensor = new Tensor(input, 'float32', [10, 100, 1, 1])
+      // 推論の実行
+      output_data = await session.run([input_tensor])
+      output_data = output_data.values().next().value.data
+      console.log(output_data)
+      let img_num=10
+      let width = 64
+      let height = 64
+      for(let im=0;im<img_num;++im){
+        context = canvases[im].getContext("2d")
+        for(let h=0;h<height;++h){
+          for(let w=0;w<width;++w){
+            let r = output_data[(width*height*3)*im + (width*height)*0 + (width)*h + w]
+            let g = output_data[(width*height*3)*im + (width*height)*1 + (width)*h + w]
+            let b = output_data[(width*height*3)*im + (width*height)*2 + (width)*h + w]
+            r = Math.floor((r*0.5+0.5)*256)
+            g = Math.floor((g*0.5+0.5)*256)
+            b = Math.floor((b*0.5+0.5)*256)
+
+            
+            context.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')'
+            context.fillRect(w*m_size,h*m_size,m_size,m_size)
+          }
+        }
+      }
+    }
+    loadmodel()
+  </script>
+</html>
